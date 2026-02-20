@@ -1,24 +1,37 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function App() {
-  const [message, setMessage] = useState("Loading...");
+  const [file, setFile] = useState(null);
+  const [response, setResponse] = useState("");
 
-  useEffect(() => {
-    fetch("http://127.0.0.1:5000/test")
-      .then((res) => res.json())
-      .then((data) => {
-        setMessage(data.message);
-      })
-      .catch((err) => {
-        setMessage("Error connecting to backend");
-        console.error(err);
-      });
-  }, []);
+  const handleUpload = async () => {
+    const formData = new FormData();
+    formData.append("resume", file);
+
+    const res = await fetch("http://127.0.0.1:5000/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setResponse(JSON.stringify(data, null, 2));
+  };
 
   return (
-    <div style={{ padding: "40px", fontFamily: "Arial" }}>
+    <div style={{ padding: "40px" }}>
       <h1>Resume Matcher</h1>
-      <h2>{message}</h2>
+
+      <input
+        type="file"
+        accept=".pdf"
+        onChange={(e) => setFile(e.target.files[0])}
+      />
+
+      <br /><br />
+
+      <button onClick={handleUpload}>Upload Resume</button>
+
+      <pre>{response}</pre>
     </div>
   );
 }
