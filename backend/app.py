@@ -47,32 +47,56 @@ def upload_resume():
 
     return jsonify({
         "message": "Resume uploaded successfully",
+        "full_text": text,
         "text_preview": text[:500]
     })
 
-@app.route("/match", methods=["POST"])
-def match_resume():
-    data = request.json
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
+@app.route("/match", methods=["POST"])
+def match():
+    data = request.get_json()
     resume_text = data.get("resume_text", "")
     job_description = data.get("job_description", "")
 
-    if not resume_text or not job_description:
-        return jsonify({"error": "Missing data"}), 400
+    print("Resume length:", len(resume_text))
+    print("JD length:", len(job_description))
 
-    # NLP Matching using TF-IDF
     documents = [resume_text, job_description]
+
+    resume_text = resume_text[:2000]
+    job_description = job_description[:1000]
 
     vectorizer = TfidfVectorizer(stop_words="english")
     tfidf_matrix = vectorizer.fit_transform(documents)
 
+    feature_names = vectorizer.get_feature_names_out()
+    print("Total common vocabulary size:", len(feature_names))
+
     similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
 
-    match_score = round(similarity * 100, 2)
+    score = round(similarity * 100, 2)
 
-    return jsonify({
-        "match_score": match_score
-    })
+# Normalize score for better interpretation
+    if score < 30:
+        score = score
+    elif score < 50:
+        score = score + 20
+    else:
+        score = score + 30
+
+    score = min(score, 100)
+
+    print("Resume sample:")
+    print(resume_text[:500])
+
+    print("\nJD sample:")
+    print(job_description[:200])
+
+    print("Similarity score:", score)
+
+    return jsonify({"match_score": score})
 
 @app.route("/test", methods=["GET"])
 def test():

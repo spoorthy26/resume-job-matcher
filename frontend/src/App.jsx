@@ -4,11 +4,14 @@ function App() {
   const [file, setFile] = useState(null);
   const [resumeText, setResumeText] = useState("");
   const [jobDesc, setJobDesc] = useState("");
-  const [score, setScore] = useState("");
+  const [score, setScore] = useState(null);
 
   const uploadResume = async () => {
     const formData = new FormData();
     formData.append("resume", file);
+
+    
+    
 
     const res = await fetch("http://127.0.0.1:5000/upload", {
       method: "POST",
@@ -16,10 +19,11 @@ function App() {
     });
 
     const data = await res.json();
+    console.log("Upload response:", data);
 
-    if (data.text_preview) {
-      setResumeText(data.text_preview);
-      alert("Resume uploaded successfully");
+    if (data.full_text) {
+      setResumeText(data.full_text);
+      console.log("Resume text length:", data.full_text.length);
     }
   };
 
@@ -39,7 +43,15 @@ function App() {
     setScore(data.match_score);
   };
 
+  const getMatchLabel = (score) => {
+      if (score >= 80) return "Excellent Match";
+      if (score >= 60) return "Good Match";
+      if (score >= 40) return "Average Match";
+      return "Low Match";
+    };
+
   return (
+    
     <div style={styles.page}>
       <div style={styles.wrapper}>
         <div style={styles.header}>
@@ -48,6 +60,8 @@ function App() {
             Upload your resume and compare it with a job description
           </p>
         </div>
+        
+    
 
         <div style={styles.mainContainer}>
           {/* Upload Section */}
@@ -88,11 +102,24 @@ function App() {
           </div>
         </div>
 
-        {score && (
-          <div style={styles.resultBox}>
-            Match Score: <span style={styles.score}>{score}%</span>
-          </div>
-        )}
+        {score !== null && (
+  <div style={styles.resultBox}>
+    <h3 style={{ marginBottom: "10px" }}>Match Result</h3>
+
+    <div style={styles.progressBarBackground}>
+      <div
+        style={{
+          ...styles.progressBarFill,
+          width: `${score}%`,
+        }}
+      />
+    </div>
+
+    <p style={{ marginTop: "10px", fontSize: "18px" }}>
+      {score}% – {getMatchLabel(score)}
+    </p>
+  </div>
+)}
       </div>
     </div>
   );
@@ -114,6 +141,20 @@ const styles = {
     maxWidth: "1100px",
     padding: "50px 40px",
   },
+  progressBarBackground: {
+  width: "100%",
+  height: "14px",
+  backgroundColor: "#e5e7eb",
+  borderRadius: "8px",
+  overflow: "hidden",
+},
+
+progressBarFill: {
+  height: "100%",
+  backgroundColor: "#2563eb",
+  borderRadius: "8px",
+  transition: "width 0.5s ease",
+},
 
   header: {
     marginBottom: "40px",
